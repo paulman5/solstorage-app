@@ -1,0 +1,18 @@
+{
+  "hasSrc": true,
+  "packages": [
+    "drizzle",
+    "clerk",
+    "shadcn-ui"
+  ],
+  "preferredPackageManager": "bun",
+  "t3": false,
+  "alias": "@",
+  "analytics": true,
+  "rootPath": "src/",
+  "orm": "drizzle",
+  "auth": "clerk",
+  "componentLib": "shadcn-ui",
+  "provider": "node-postgres",
+  "driver": "pg"
+}
