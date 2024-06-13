@@ -2,12 +2,8 @@ import React from "react"
 import { FileUp } from "lucide-react"
 import { url } from "inspector"
 import { uploadProps } from "@/lib/types/types"
-import DocViewer, { DocViewerRenderers } from "@cyntler/react-doc-viewer"
 
-export default function Docinput({
-  selectedDocs,
-  setSelectedDocs,
-}: uploadProps) {
+export default function Docinput({ setSelectedDocs }: uploadProps) {
   return (
     <div className="flex items-center justify-center w-full">
       <label

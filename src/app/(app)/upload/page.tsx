@@ -1,10 +1,12 @@
 "use client"
 
 import React, { useState } from "react"
+import Signedpng from "../../../lib/images/signed.png"
 import { Input } from "@/components/ui/input"
 import Docinput from "@/components/ui/docinput"
 import DocViewer, { DocViewerRenderers } from "@cyntler/react-doc-viewer"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { PDFDocument, rgb } from "pdf-lib"
 
 export default function Upload() {
   const [userChoice, setUserChoice] = useState<string | null>()
@@ -12,12 +14,59 @@ export default function Upload() {
   const [nonEncrypted, setNonEncrypted] = useState<boolean>()
   const [uploadVisible, setUploadVisible] = useState<boolean>(false)
   const [selectedDocs, setSelectedDocs] = useState<File[]>([])
-  const [signedStatus, setSignedStatus] = useState<boolean>(true)
+  const [signedStatus, setSignedStatus] = useState<boolean>(false)
+  const [signedDate, setSignedDate] = useState<string>("")
 
   function handleStorageChoice(isEncrypted: boolean) {
     setUploadVisible(true)
     setEncrypted(isEncrypted)
     setNonEncrypted(!isEncrypted)
+  }
+
+  function singatureTimeStamp() {
+    const UTCtimenow = new Date().toISOString()
+    setSignedDate(UTCtimenow)
+  }
+  const handleSign = async () => {
+    if (selectedDocs.length === 0) return
+
+    try {
+      const file = selectedDocs[0]
+      const fileArrayBuffer = await file.arrayBuffer()
+      const pdfDoc = await PDFDocument.load(fileArrayBuffer)
+
+      // Load the image to be embedded in the PDF
+      const pngUrl = Signedpng.src // Replace with your signed image path
+      const response = await fetch(pngUrl)
+      const pngImageBytes = await response.arrayBuffer()
+      const pngImage = await pdfDoc.embedPng(pngImageBytes)
+
+      // Iterate through all the pages and draw the image and text on each one
+      const pages = pdfDoc.getPages()
+      for (const page of pages) {
+        const { width, height } = page.getSize()
+
+        const pngDims = pngImage.scale(0.5) // Adjust scale as needed
+        page.drawImage(pngImage, {
+          x: width - pngDims.width - 10,
+          y: height - pngDims.height - 10,
+          width: pngDims.width,
+          height: pngDims.height,
+        })
+      }
+
+      const pdfBytes = await pdfDoc.save()
+      const newFile = new File([pdfBytes], `signed-${file.name}`, {
+        type: file.type,
+      })
+
+      setSelectedDocs([newFile])
+      if (newFile) {
+        singatureTimeStamp()
+      }
+    } catch (error) {
+      console.error("Error signing the document:", error)
+    }
   }
 
   return selectedDocs.length === 0 ? (
@@ -51,17 +100,14 @@ export default function Upload() {
       {uploadVisible && (
         <div className=" flex items-center justify-center h-5/6 -mt-20">
           <div className="max-w-screen-xl w-96">
-            <Docinput
-              selectedDocs={selectedDocs}
-              setSelectedDocs={setSelectedDocs}
-            />
+            <Docinput setSelectedDocs={setSelectedDocs} />
           </div>
         </div>
       )}
     </>
   ) : (
-    <div className="flex w-full flex-row">
-      <div className="w-full">
+    <div className="flex w-full h-full flex-row">
+      <div className="w-8/12">
         <DocViewer
           documents={selectedDocs.map((file) => ({
             uri: window.URL.createObjectURL(file),
@@ -83,26 +129,38 @@ export default function Upload() {
           pluginRenderers={DocViewerRenderers}
         />
       </div>
-      <div className="bg-slate-50" style={{ width: 500 }}>
+      <div className="flex-col h-full bg-slate-50 w-4/12">
+        <div className="flex justify-center text-center mt-5">
+          <button
+            onClick={() => {
+              setSignedStatus(true)
+              handleSign()
+            }}
+            className="flex justify-center text-center mt-5"
+          >
+            {" "}
+            Sign document here{" "}
+          </button>
+        </div>
         <div className="flex justify-center text-center mt-10">
-          <div className="bg-green-300 w-52 rounded-md">
-            {signedStatus
-              ? "Document is signed"
-              : "Document has not been signed"}
-          </div>
+          {signedStatus ? (
+            <div className="bg-green-300 w-52 rounded-md">
+              Document has been succesfully signed
+            </div>
+          ) : (
+            <div className="bg-red-400 w-52 rounded-md">
+              Document has not yet been signed
+            </div>
+          )}
         </div>
         <div className="mt-10 ml-8 mr-8 h-14">
-          <Tabs defaultValue="account" className="w-[400px] jus">
+          <Tabs defaultValue="account" className="w-full jus">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="recipients">Recipients</TabsTrigger>
               <TabsTrigger value="history">History</TabsTrigger>
             </TabsList>
-            <TabsContent value="recipients">
-              Make changes to your account here.
-            </TabsContent>
-            <TabsContent value="history">
-              Change your password here.
-            </TabsContent>
+            <TabsContent value="recipients">{}</TabsContent>
+            <TabsContent value="history">{signedDate}</TabsContent>
           </Tabs>
         </div>
       </div>

@@ -6,9 +6,9 @@ import { DataTable } from "@/components/ui/data-table"
 export default async function Home() {
   const userAuth = await getUserAuth()
   return (
-    <main className="space-y-6">
+    <main className="space-y-">
       <div>
-        <h1 className="text-3xl font-semibold ">The contract vault</h1>
+        <h1 className="text-3xl font-semibold">The contract vault</h1>
       </div>
       <div>
         <DataTable />
